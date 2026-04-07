@@ -1,3 +1,4 @@
+// --- ELEMENTS ---
 const loginModal = document.getElementById('loginModal');
 const loginButton = document.getElementById('loginButton');
 const closeModal = document.getElementById('closeModal');
@@ -11,7 +12,12 @@ const regionSelect = document.getElementById('regionSelect');
 const gamemodeSelect = document.getElementById('gamemodeSelect');
 const tierSelect = document.getElementById('tierSelect');
 const managedEntries = document.getElementById('managedEntries');
+const memberSearch = document.getElementById('memberSearch');
+const memberList = document.getElementById('memberList');
 
+const AUTH_TOKEN = 'creepertiers-admin-token'; // keep consistent with server
+
+// --- MODAL HANDLERS ---
 function showLogin() {
   loginModal.classList.add('active');
 }
@@ -21,79 +27,86 @@ function hideLogin() {
   loginError.textContent = '';
 }
 
+// --- FETCH ENTRIES ---
 function fetchEntries() {
   fetch('/api/entries')
-    .then((res) => res.json())
-    .then((entries) => renderManaged(entries));
+    .then(res => res.json())
+    .then(entries => renderManaged(entries));
 }
 
 function deleteEntry(entry) {
-  if (!confirm(`Delete ${entry.username} (${entry.region} ${entry.gamemode})?`)) {
-    return;
-  }
+  if (!confirm(`Delete ${entry.username} (${entry.region} ${entry.gamemode})?`)) return;
 
   fetch(`/api/entry?username=${encodeURIComponent(entry.username)}&region=${encodeURIComponent(entry.region)}&gamemode=${encodeURIComponent(entry.gamemode)}`, {
     method: 'DELETE',
-    headers: {
-      Authorization: 'Bearer creepertiers-admin-token',
-    },
+    headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
   })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.success) {
-        fetchEntries();
-      }
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) fetchEntries();
     });
 }
 
+// --- RENDER ENTRIES ---
 function renderManaged(entries) {
-  managedEntries.innerHTML = '';
+  managedEntries.innerHTML = ''; // CLEAR table to prevent duplicates
+
   const header = document.createElement('div');
   header.className = 'table-row head';
   header.innerHTML = '<span>PLAYER</span><span>REGION</span><span>GAMEMODE</span><span>TIER</span><span>ACTION</span>';
   managedEntries.appendChild(header);
 
-  entries.forEach((entry) => {
+  entries.forEach(entry => {
     const row = document.createElement('div');
     row.className = 'table-row';
     row.innerHTML = `
-      <div class="player-grid"><img src="https://cravatar.eu/helmhead/${encodeURIComponent(entry.username)}/64.png" alt="${entry.username}" /><span>${entry.username}</span></div>
+      <div class="player-grid">
+        <img src="https://cravatar.eu/helmhead/${encodeURIComponent(entry.username)}/64.png" alt="${entry.username}" />
+        <span>${entry.username}</span>
+      </div>
       <span>${entry.region}</span>
       <span>${entry.gamemode}</span>
       <span>${entry.tier}</span>
       <button class="delete-button">Remove</button>
     `;
+
+    // REMOVE any old event listeners before adding new
     const deleteButton = row.querySelector('.delete-button');
-    deleteButton.addEventListener('click', () => deleteEntry(entry));
+    deleteButton.replaceWith(deleteButton.cloneNode(true));
+    row.querySelector('.delete-button').addEventListener('click', () => deleteEntry(entry));
+
     managedEntries.appendChild(row);
   });
 }
 
+// --- LOGIN ---
 function login() {
   const email = loginEmail.value.trim();
   const password = loginPassword.value.trim();
+
   fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
-    .then(async (res) => {
+    .then(async res => {
       if (!res.ok) {
         const body = await res.json();
         throw new Error(body.message || 'Login failed');
       }
       return res.json();
     })
-    .then((data) => {
+    .then(() => {
       hideLogin();
       fetchEntries();
       fetchMembers();
     })
-    .catch((error) => {
+    .catch(error => {
       loginError.textContent = error.message;
     });
 }
 
+// --- ADD / UPDATE ENTRY ---
 function addOrUpdateEntry() {
   const username = usernameInput.value.trim();
   const region = regionSelect.value;
@@ -103,36 +116,33 @@ function addOrUpdateEntry() {
 
   fetch('/api/entry', {
     method: 'POST',
-    headers: {
+    headers: { 
       'Content-Type': 'application/json',
-      Authorization: 'Bearer creepertiers-admin-token',
+      Authorization: `Bearer ${AUTH_TOKEN}`
     },
     body: JSON.stringify({ username, region, gamemode, tier }),
   })
-    .then((res) => res.json())
-    .then((data) => {
+    .then(res => res.json())
+    .then(data => {
       if (data.success) {
         usernameInput.value = '';
-        fetchEntries();
+        fetchEntries(); // refresh table
       }
     });
 }
 
-const memberSearch = document.getElementById('memberSearch');
-const memberList = document.getElementById('memberList');
-
+// --- FETCH MEMBERS ---
 function fetchMembers() {
-  fetch('/api/members', {
-    headers: { Authorization: 'Bearer creepertiers-admin-token' },
-  })
-    .then((res) => res.json())
-    .then((members) => renderMembers(members));
+  fetch('/api/members', { headers: { Authorization: `Bearer ${AUTH_TOKEN}` } })
+    .then(res => res.json())
+    .then(members => renderMembers(members));
 }
 
 function renderMembers(members) {
-  const filtered = members.filter(member => member.toLowerCase().includes(memberSearch.value.toLowerCase()));
-  memberList.innerHTML = '';
-  filtered.forEach((member) => {
+  const filtered = members.filter(m => m.toLowerCase().includes(memberSearch.value.toLowerCase()));
+  memberList.innerHTML = ''; // CLEAR list to prevent duplicates
+
+  filtered.forEach(member => {
     const item = document.createElement('div');
     item.className = 'member-item';
     item.innerHTML = `
@@ -142,20 +152,24 @@ function renderMembers(members) {
       </div>
       <button class="remove-member-btn">Remove</button>
     `;
+
     const removeBtn = item.querySelector('.remove-member-btn');
-    removeBtn.addEventListener('click', () => removeMember(member));
+    removeBtn.replaceWith(removeBtn.cloneNode(true)); // remove old listeners
+    item.querySelector('.remove-member-btn').addEventListener('click', () => removeMember(member));
+
     memberList.appendChild(item);
   });
 }
 
 function removeMember(username) {
   if (!confirm(`Remove ${username} from all rankings?`)) return;
+
   fetch(`/api/member?username=${encodeURIComponent(username)}`, {
     method: 'DELETE',
-    headers: { Authorization: 'Bearer creepertiers-admin-token' },
+    headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
   })
-    .then((res) => res.json())
-    .then((data) => {
+    .then(res => res.json())
+    .then(data => {
       if (data.success) {
         fetchMembers();
         fetchEntries();
@@ -163,6 +177,7 @@ function removeMember(username) {
     });
 }
 
+// --- EVENT LISTENERS ---
 loginButton.addEventListener('click', login);
 closeModal.addEventListener('click', hideLogin);
 logoutButton.addEventListener('click', () => {
@@ -170,6 +185,4 @@ logoutButton.addEventListener('click', () => {
   window.location.href = '/';
 });
 addEntryButton.addEventListener('click', addOrUpdateEntry);
-memberSearch.addEventListener('input', () => {
-  fetchMembers();
-});
+memberSearch.addEventListener('input', fetchMembers);
