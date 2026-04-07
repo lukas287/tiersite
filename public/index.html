@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CREEPERTIERSRANKINGS</title>
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="manager-pill" href="/admin" onclick="handleManagerClick(event)">Tier Manager</a>
+      <div class="brand-row">
+        <div class="brand-name">
+          <span>CreeperTiers</span>
+          <small>Rankings</small>
+        </div>
+      </div>
+      <nav class="topnav">
+        <a href="#"><span class="nav-icon">🏠</span>Home</a>
+        <a href="#rankings"><span class="nav-icon">🏆</span>Rankings</a>
+        <a href="https://discord.gg/UaaBSY9RRs"><span class="nav-icon">💬</span>Discord</a>
+      </nav>
+    </header>
+
+    <main class="hero-section">
+      <div class="hero-copy">
+        <h1>Competitive Minecraft PvP Rankings</h1>
+        <p>View up-to-date tiers across all supported gamemodes, from Vanilla to NethOP. Powered by the community, curated by staff.</p>
+        <div class="meta-card">
+          <span>SERVER IP</span>
+          <strong>mcpvp.club</strong>
+        </div>
+      </div>
+    </main>
+
+    <section class="tiers-section" id="rankings">
+      <h2>TIERS</h2>
+      <div class="mode-buttons" id="gamemodeButtons"></div>
+      <div class="tier-grid" id="tierGrid"></div>
+    </section>
+
+    <footer class="site-footer">
+      <p>Copyrights © creepertiers 2026 Rankings website</p>
+    </footer>
+  </div>
+
+  <div class="login-modal" id="loginModal">
+    <div class="login-card">
+      <button class="close-modal" id="closeModal">×</button>
+      <div class="login-title">Tier Manager Login</div>
+      <div class="login-text">Use the manager credentials to access the tier management panel.</div>
+      <label>EMAIL</label>
+      <input id="loginEmail" placeholder="Enter manager email" />
+      <label>PASSWORD</label>
+      <input id="loginPassword" type="password" placeholder="Enter password" />
+      <div class="login-help">Enter your manager credentials to access the tier panel.</div>
+      <button class="login-button" id="loginButton">LOG IN</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
